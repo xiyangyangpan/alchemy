@@ -11,7 +11,7 @@ from common.DBI import SQLiteManager
 
 class CrawlerPipeline(object):
     def process_item(self, item, spider):
-        logging.log(logging.DEBUG, 'CrawlerPipeline::process_item(): %s' % item['url'][len('https://www.fool.com/'):])
+        logging.log(logging.DEBUG, 'CrawlerPipeline::process_item(): %s' % item['url'])
 
         if SQLiteManager.has_article('ArticleEN', item['url']):
             logging.log(logging.DEBUG, 'CrawlerPipeline::process_item(): article already exists')

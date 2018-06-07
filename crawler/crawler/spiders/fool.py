@@ -11,12 +11,17 @@ from scrapy.http import Request
 from crawler.items import FoolItem
 from crawler.items import AlchemyItem
 from common.DBI import SQLiteManager
+import ConfigParser
 
+cp = ConfigParser.SafeConfigParser()
+cp.read('alchemy.conf')
+allowed_domain = cp.get('crawler', 'allowed_domain')
+start_url = cp.get('crawler', 'start_url')
 
 class FoolSpider(CrawlSpider):
     name = 'fool'
-    allowed_domains = ['fool.com']
-    start_urls = ['https://www.fool.com/sitemap/']
+    allowed_domains = [allowed_domain]
+    start_urls = [start_url+'/sitemap']
     cls_db_mgr = None
     fetched_cnt = 0
     crawl_days = 1
@@ -32,7 +37,8 @@ class FoolSpider(CrawlSpider):
         year_three_day_ago = three_day_ago.strftime('%Y')
 
         logging.log(logging.INFO, 'parse_start_url(): current year-month %s-%s' % (year_three_day_ago, month_three_day_ago))
-        sitemap_loc_url = 'https://www.fool.com/sitemap/%s/%s' % (year_three_day_ago, month_three_day_ago)
+        #sitemap_loc_url = 'https://www.fool.com/sitemap/%s/%s' % (year_three_day_ago, month_three_day_ago)
+        sitemap_loc_url = (start_url + '/sitemap/%s/%s') % (year_three_day_ago, month_three_day_ago)
         logging.log(logging.DEBUG, 'sitemap url: %s' % sitemap_loc_url)
         sitemap_request = Request(sitemap_loc_url, callback=self.parse_child_sitemap)
         sitemap_request.meta['dont_cache'] = True
@@ -59,7 +65,7 @@ class FoolSpider(CrawlSpider):
                 continue
 
             # 只下载投资类文章
-            if article_url.startswith('https://www.fool.com/investing'):
+            if article_url.startswith(start_url + '/investing'):
                 investing_url_list.append(article_url)
 
         logging.log(logging.INFO, 'parse_child_sitemap(): %d url to filter' % len(investing_url_list))

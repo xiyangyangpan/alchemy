@@ -18,6 +18,7 @@ cp.read('alchemy.conf')
 allowed_domain = cp.get('crawler', 'allowed_domain')
 start_url = cp.get('crawler', 'start_url')
 
+
 class FoolSpider(CrawlSpider):
     name = 'fool'
     allowed_domains = [allowed_domain]
@@ -37,7 +38,6 @@ class FoolSpider(CrawlSpider):
         year_three_day_ago = three_day_ago.strftime('%Y')
 
         logging.log(logging.INFO, 'parse_start_url(): current year-month %s-%s' % (year_three_day_ago, month_three_day_ago))
-        #sitemap_loc_url = 'https://www.fool.com/sitemap/%s/%s' % (year_three_day_ago, month_three_day_ago)
         sitemap_loc_url = (start_url + '/sitemap/%s/%s') % (year_three_day_ago, month_three_day_ago)
         logging.log(logging.DEBUG, 'sitemap url: %s' % sitemap_loc_url)
         sitemap_request = Request(sitemap_loc_url, callback=self.parse_child_sitemap)
@@ -150,7 +150,7 @@ class FoolSpider(CrawlSpider):
             item['content'] = content
             logging.log(logging.DEBUG, "parse_article(): content is ordinary string")
         elif isinstance(content, unicode):
-            logging.log(logging.DEBUG, "parse_article(): content is unicode string")
+            logging.log(logging.DEBUG, "parse_article(): content is unicode string, convert to UTF-8 string.")
             content = unicodedata.normalize('NFKD', content).encode('ascii', 'ignore')
             item['content'] = content.encode("UTF-8")
         else:

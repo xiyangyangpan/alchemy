@@ -17,7 +17,6 @@ import ConfigParser
 
 cp = ConfigParser.SafeConfigParser()
 cp.read('alchemy.conf')
-print 'all sections:', cp.sections()
 
 # SQLAlchemy
 # turn on SQLalchemy if echo=True
@@ -28,7 +27,8 @@ db_name = 'fool'
 connect_str = "mysql+pymysql://%s:%s@127.0.0.1:3306/%s?charset=utf8" % (db_user, db_passwd, db_name)
 engine = create_engine(connect_str, max_overflow=5, encoding="utf-8", echo=False)
 Session = scoped_session(sessionmaker(bind=engine))
-logging.basicConfig()
+# turn on debuglog log output
+#logging.basicConfig()
 #logging.getLogger('sqlalchemy.engine').setLevel(logging.DEBUG)
 
 

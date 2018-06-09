@@ -233,7 +233,7 @@ def pub_articles_to_site(rest_session_headers, domain, bulk_size=1):
 
     for article in SQLiteManager.all_article('ArticleCN'):
         # if domain is 'all', publish all articles
-        if (not article.publishedFlag) or (domain is 'all'):
+        if (not article.publishedFlag) or (domain == 'all'):
             if not pub_cn_article('article', article.url, rest_session_headers):
                 # error occurs when posting article to web site
                 cnt_fail += 1

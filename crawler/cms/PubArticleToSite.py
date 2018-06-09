@@ -227,14 +227,18 @@ def pub_cn_article(article_type, url, rest_session_headers):
 #     SQL DB: articles in MySQL DB
 # --------------------------------------------------------------------
 def pub_articles_to_site(rest_session_headers, domain, bulk_size=1):
-    logger.debug('ready to publish articles ... domain: %s' % domain)
+    logger.info('ready to post articles ... domain: %s' % domain)
     cnt_succ = 0
     cnt_fail = 0
 
-    for article in SQLiteManager.all_article('ArticleCN'):
+    articles = SQLiteManager.all_article('ArticleCN')
+    logger.info('%d articles to be posted' % len(articles))
+
+    for article in articles:
         # if domain is 'all', publish all articles
         if (not article.publishedFlag) or (domain == 'all'):
-            if not pub_cn_article('article', article.url, rest_session_headers):
+            ret_post = pub_cn_article('article', article.url, rest_session_headers)
+            if not ret_post:
                 # error occurs when posting article to web site
                 cnt_fail += 1
                 if cnt_fail == bulk_size:
@@ -243,7 +247,7 @@ def pub_articles_to_site(rest_session_headers, domain, bulk_size=1):
             else:
                 SQLiteManager.upd_article_published_flag('ArticleCN', article.url, True)
                 cnt_succ += 1
-                if cnt_succ == bulk_size:
+                if cnt_succ == bulk_size and domain == 'all':
                     break
     logger.debug('%d new articles are published.' % cnt_succ)
 

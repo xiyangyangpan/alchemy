@@ -25,7 +25,7 @@ class FoolSpider(CrawlSpider):
     start_urls = [start_url+'/sitemap']
     cls_db_mgr = None
     fetched_cnt = 0
-    crawl_days = 80
+    crawl_days = 1
 
     def parse_start_url(self, response):
         logging.log(logging.INFO, 'parse_start_url(): %s' % response.url)

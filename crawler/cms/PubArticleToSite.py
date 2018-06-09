@@ -227,7 +227,7 @@ def pub_cn_article(article_type, url, rest_session_headers):
 #     SQL DB: articles in MySQL DB
 # --------------------------------------------------------------------
 def pub_articles_to_site(rest_session_headers, domain, bulk_size=1):
-    logger.debug('ready to publish articles ...')
+    logger.debug('ready to publish articles ... domain: %s' % domain)
     cnt_succ = 0
     cnt_fail = 0
 

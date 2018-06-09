@@ -29,8 +29,8 @@ if __name__ == "__main__":
     elif options.mode == "revoke":
         print("revoke published articles from web site")
         print("domain: %s" % domain)
-        #rest_session_headers = rest_login()
-        #rest_del_all_nodes(rest_session_headers)
+        rest_session_headers = rest_login()
+        rest_del_all_nodes(rest_session_headers)
     else:
         parser.print_help()
         sys.exit(0)

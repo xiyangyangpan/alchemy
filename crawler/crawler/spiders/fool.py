@@ -92,7 +92,7 @@ class FoolSpider(CrawlSpider):
                         day_counter[day_idx] += 1
 
         download_url_list = list()
-        max_download_per_day = 10
+        max_download_per_day = 15
         for day_idx in day_counter.keys():
             for url in investing_url_list:
                 if day_idx in url:

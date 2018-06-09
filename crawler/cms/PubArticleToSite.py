@@ -247,7 +247,7 @@ def pub_articles_to_site(rest_session_headers, domain, bulk_size=1):
             else:
                 SQLiteManager.upd_article_published_flag('ArticleCN', article.url, True)
                 cnt_succ += 1
-                if cnt_succ == bulk_size and domain == 'all':
+                if cnt_succ == bulk_size and domain != 'all':
                     break
     logger.debug('%d new articles are published.' % cnt_succ)
 

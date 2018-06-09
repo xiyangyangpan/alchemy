@@ -226,15 +226,16 @@ def pub_cn_article(article_type, url, rest_session_headers):
 #     rest_session_headers: headers for connected session (json format)
 #     SQL DB: articles in MySQL DB
 # --------------------------------------------------------------------
-def pub_articles_to_site(rest_session_headers, bulk_size=1):
+def pub_articles_to_site(rest_session_headers, domain, bulk_size=1):
     logger.debug('ready to publish articles ...')
     cnt_succ = 0
     cnt_fail = 0
 
     for article in SQLiteManager.all_article('ArticleCN'):
-        if not article.publishedFlag:
+        # if domain is 'all', publish all articles
+        if (not article.publishedFlag) or (domain is 'all'):
             if not pub_cn_article('article', article.url, rest_session_headers):
-                # publish error occurs
+                # error occurs when posting article to web site
                 cnt_fail += 1
                 if cnt_fail == bulk_size:
                     break

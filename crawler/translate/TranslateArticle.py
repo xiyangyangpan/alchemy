@@ -7,7 +7,6 @@ from datetime import datetime
 from scrapy.selector import Selector
 from bs4 import BeautifulSoup
 from bs4 import NavigableString
-
 from common.DBI import ArticleCN
 from common.DBI import SQLiteManager
 # from common.utility import logger

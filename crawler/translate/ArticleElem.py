@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 from bs4 import BeautifulSoup
 # from bs4 import NavigableString
-from common.utility import Stack, logger
+from common.utility import Stack
+from ts_log import logger
 # from .MicrosoftApi import ms_translate
 # from .BaiduApi import baidu_translate
 # translate_func = None

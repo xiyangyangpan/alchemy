@@ -6,7 +6,7 @@ import hashlib
 import urllib
 import random
 import json
-from mylog import logger
+from ts_log import logger
 from Translator import Translator
 if sys.version_info.major == 2:
     import httplib

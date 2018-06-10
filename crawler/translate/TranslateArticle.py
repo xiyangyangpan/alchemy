@@ -8,7 +8,7 @@ from scrapy.selector import Selector
 from bs4 import BeautifulSoup
 from bs4 import NavigableString
 # from common.utility import logger
-from mylog import logger
+from translate_log import logger
 from common.DBI import ArticleCN
 from common.DBI import SQLiteManager
 import unicodedata

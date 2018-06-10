@@ -217,20 +217,19 @@ def translate_articles(bulk_size=1):
 
     # for article in SQLiteManager.all_article('ArticleEN'):
     for url in SQLiteManager.query_un_translated_article():
-        logger.debug('\n')
         article = SQLiteManager.get_article('ArticleEN', url)
         if article is None:
-            logger.error('error get article!! URL: %s' % url)
+            logger.error('error get article!! URL: %s\n' % url)
             continue
 
         # filtering some categories of articles
         if article.articleSection in ['retirement', 'careers', 'taxes', 'credit-cards', 'mortgages']:
-            logger.debug('ignore translating article for %s' % article.articleSection)
+            logger.debug('ignore translating article for %s\n' % article.articleSection)
             continue
 
         # filtering some categories of articles
         if article.articleTag in ['usmf-other']:
-            logger.debug('ignore translating article for %s' % article.articleTag)
+            logger.debug('ignore translating article for %s\n' % article.articleTag)
             continue
 
         logger.info('begin translate article %s' % url)
@@ -263,8 +262,8 @@ def translate_articles(bulk_size=1):
         article_cn.publishDate = article.publishDate
         article_cn.publishTime = datetime.strptime(article.publishDate, '%b %d, %Y at %I:%M%p')
 
-        logger.debug('Main Title: %s\n' % article_cn.mainTitle)
-        logger.debug('Sub Title: %s\n' % article_cn.subTitle)
+        logger.debug('Main Title: %s' % article_cn.mainTitle)
+        logger.debug('Sub Title: %s' % article_cn.subTitle)
 
         # translate content
         content_en = pickle.loads(zlib.decompress(article.content))
@@ -276,11 +275,11 @@ def translate_articles(bulk_size=1):
 
         logger.debug('ready to store the translated article.')
         if SQLiteManager.add_article(article_cn):
-            logger.debug('successfully store article(%s)' % article_cn.mainTitle)
+            logger.debug('successfully store article(%s)\n' % article_cn.mainTitle)
             success_count += 1
             bulk_size -= 1
         else:
-            logger.debug('fails to store translated article(%s) into database' % article_cn.mainTitle)
+            logger.debug('fails to store translated article(%s) into database\n' % article_cn.mainTitle)
             fail_count += 1
         logger.debug('\n')
 

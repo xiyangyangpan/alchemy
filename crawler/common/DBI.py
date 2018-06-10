@@ -2,6 +2,10 @@
 # -*- coding: utf-8 -*-
 # Define extensions here
 import logging
+import sys
+import pickle
+import zlib
+import ConfigParser
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import exc
 from sqlalchemy import Table, Column, BLOB, String, CHAR, VARCHAR, BOOLEAN, VARBINARY, TEXT
@@ -9,11 +13,8 @@ from sqlalchemy import DateTime, MetaData, ForeignKey
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import scoped_session
-from sqlalchemy import text, func
-import sys
-import pickle
-import zlib
-import ConfigParser
+from sqlalchemy import text
+
 
 cp = ConfigParser.SafeConfigParser()
 cp.read('alchemy.conf')

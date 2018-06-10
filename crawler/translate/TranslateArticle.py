@@ -224,12 +224,12 @@ def translate_articles(bulk_size=1):
 
         # filtering some categories of articles
         if article.articleSection in ['retirement', 'careers', 'taxes', 'credit-cards', 'mortgages']:
-            logger.debug('ignore translating article for %s\n' % article.articleSection)
+            logger.debug('ignore translating article for %s. URL: %s\n' % (article.articleSection, url))
             continue
 
         # filtering some categories of articles
         if article.articleTag in ['usmf-other']:
-            logger.debug('ignore translating article for %s\n' % article.articleTag)
+            logger.debug('ignore translating article for %s. URL: %s\n' % (article.articleTag, url))
             continue
 
         logger.info('begin translate article %s' % url)

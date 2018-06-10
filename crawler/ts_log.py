@@ -3,7 +3,7 @@
 import sys
 import logging
 from logging.handlers import RotatingFileHandler
-logger = logging.getLogger("TSLOG")
+logger = logging.getLogger("TS")
 formatter = logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)-8s %(message)s', '%d %b %Y %H:%M:%S',)
 file_handler = RotatingFileHandler("ts.log", maxBytes=2*1024*1024, backupCount=1)
 file_handler.setFormatter(formatter)

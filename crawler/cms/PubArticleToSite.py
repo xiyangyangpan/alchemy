@@ -7,7 +7,8 @@ import pickle
 import zlib
 import requests
 import ConfigParser
-from common.utility import logger
+#from common.utility import logger
+from cms_log import logger
 from common.DBI import SQLiteManager
 from urlparse import *
 import httplib
@@ -209,7 +210,7 @@ def pub_cn_article(article_type, url, rest_session_headers):
         }
     }
 
-    logger.debug('post an article to site')
+    logger.info('post an article to site')
     res = requests.post(urljoin(site_base_URL, node_URL), headers=rest_session_headers, json=article)
     logger.debug('response text: %s\n' % res.text)
     if res.status_code == 200:

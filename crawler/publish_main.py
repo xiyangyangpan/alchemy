@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 import sys
+import common.loggingConfig
 from optparse import OptionParser
 from cms.PubArticleToSite import *
 

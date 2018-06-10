@@ -3,18 +3,17 @@
 import sys
 import zlib
 import pickle
+import unicodedata
 from datetime import datetime
 from scrapy.selector import Selector
 from bs4 import BeautifulSoup
 from bs4 import NavigableString
 from common.DBI import ArticleCN
 from common.DBI import SQLiteManager
-# from common.utility import logger
+from ArticleElem import ArticleElem
+from BaiduApi import BaiduTranslator
 from ts_log import logger
-import unicodedata
-from .ArticleElem import ArticleElem
-#from .MicrosoftApi import MsTranslator
-from .BaiduApi import BaiduTranslator
+
 depth = 0
 
 

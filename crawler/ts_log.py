@@ -9,6 +9,7 @@ formatter = logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(level
 
 file_handler = RotatingFileHandler("ts.log", maxBytes=2*1024*1024, backupCount=1)
 file_handler.setFormatter(formatter)
+file_handler.setLevel(logging.DEBUG)
 logger.addHandler(file_handler)
 
 stream_handler = logging.StreamHandler(sys.stderr)
@@ -16,4 +17,4 @@ stream_handler.setFormatter(formatter)
 stream_handler.setLevel(logging.DEBUG)
 logger.addHandler(stream_handler)
 
-logger.setLevel(logging.DEBUG)
+#logger.setLevel(logging.DEBUG)

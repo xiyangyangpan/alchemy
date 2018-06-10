@@ -1,14 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import os
-import logging.config
-#root_path = os.getenv('USERPROFILE') + '//OneDrive//alchemy//crawler//common//'
-#logging.config.fileConfig(root_path+"logging.config")
-logging.config.fileConfig("common/logging.config")
-logger = logging.getLogger("alchemy")
 
 
-class Stack:
+class Stack(object):
     def __init__(self):
         self.items = []
 

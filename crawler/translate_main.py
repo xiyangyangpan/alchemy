@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 import sys
-from translate.TranslateArticle import translate_articles
+#from translate.TranslateArticle import translate_articles
 from ts_log import logger
 
 
@@ -10,5 +10,5 @@ if __name__ == "__main__":
     # not exceed 6 in a bulk. Otherwise, memory overflow
     logger.info("translate articles ...")
     print("tr")
-    translate_articles(bulk_size=6)
+    #translate_articles(bulk_size=6)
     sys.exit(0)

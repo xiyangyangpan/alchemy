@@ -6,12 +6,12 @@ import hashlib
 import urllib
 import random
 import json
-from ts_log import logger
 from Translator import Translator
 if sys.version_info.major == 2:
     import httplib
 elif sys.version_info.major == 3:
     import http.client
+from ts_log import logger
 
 
 class BaiduTranslator(Translator):

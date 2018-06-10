@@ -8,7 +8,7 @@ from scrapy.selector import Selector
 from bs4 import BeautifulSoup
 from bs4 import NavigableString
 # from common.utility import logger
-from translate_log import logger
+from ts_log import logger
 from common.DBI import ArticleCN
 from common.DBI import SQLiteManager
 import unicodedata
@@ -213,7 +213,7 @@ def translate_content(orig_content):
 # Output: chinese html byte stream
 # ----------------------------------------------------------------------------------
 def translate_articles(bulk_size=1):
-    logger.debug('Loads articles from DB then translates articles\n')
+    logger.info('Loads articles from DB then translates articles\n')
     success_count, fail_count = 0, 0
 
     # for article in SQLiteManager.all_article('ArticleEN'):
@@ -226,10 +226,12 @@ def translate_articles(bulk_size=1):
 
         # filtering some categories of articles
         if article.articleSection in ['retirement', 'careers', 'taxes', 'credit-cards', 'mortgages']:
+            logger.debug('ignore translating article for %s' % article.articleSection)
             continue
 
         # filtering some categories of articles
         if article.articleTag in ['usmf-other']:
+            logger.debug('ignore translating article for %s' % article.articleTag)
             continue
 
         logger.info('begin translate article %s' % url)
@@ -286,7 +288,7 @@ def translate_articles(bulk_size=1):
         # translate a bulk of articles every execution
         if bulk_size == 0:
             break
-    logger.debug('translating article summary:\n\tsuccess = %d\n\tfail = %d' % (success_count, fail_count))
+    logger.info('translating summary:\n\tsuccess = %d\n\tfail = %d' % (success_count, fail_count))
 
 
 # ----------------------------------------------------------------------------------

@@ -23,13 +23,11 @@ if __name__ == "__main__":
     domain = args[0]
 
     if options.mode == "pub":
-        logger.info("publish translated articles to web site")
-        logger.info("domain: %s" % domain)
+        logger.info("publish translated articles to web site. domain: %s" % domain)
         rest_session_headers = rest_login()
         pub_articles_to_site(rest_session_headers, domain=domain, bulk_size=3)
     elif options.mode == "revoke":
-        logger.info("revoke published articles from web site")
-        logger.info("domain: %s" % domain)
+        logger.info("revoke published articles from web site. domain:%s" % domain)
         rest_session_headers = rest_login()
         rest_del_all_nodes(rest_session_headers)
     else:

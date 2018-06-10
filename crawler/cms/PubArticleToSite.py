@@ -233,7 +233,7 @@ def pub_articles_to_site(rest_session_headers, domain, bulk_size=1):
     cnt_fail = 0
 
     articles = SQLiteManager.all_article('ArticleCN')
-    logger.info('%d articles to be posted' % len(articles))
+    logger.info('load %d articles from database' % len(articles))
 
     for article in articles:
         # if domain is 'all', publish all articles
@@ -250,5 +250,6 @@ def pub_articles_to_site(rest_session_headers, domain, bulk_size=1):
                 cnt_succ += 1
                 if cnt_succ == bulk_size and domain != 'all':
                     break
-    logger.info('%d new articles are published.' % cnt_succ)
+    logger.info('Succeeds to post %d new articles.' % cnt_succ)
+    logger.info('Failed to post %d articles.\n' % cnt_succ)
 

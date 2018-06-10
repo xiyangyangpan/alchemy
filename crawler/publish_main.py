@@ -15,8 +15,6 @@ if __name__ == "__main__":
                       help="mode: pub, revoke",
                       dest="mode")
     (options, args) = parser.parse_args()
-    print(args)
-
     if len(args) != 1 and args[0] not in ['all', 'bulk']:
         parser.print_help()
         sys.exit(0)

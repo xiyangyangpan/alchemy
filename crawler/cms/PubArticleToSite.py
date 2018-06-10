@@ -7,9 +7,9 @@ import pickle
 import zlib
 import requests
 import ConfigParser
+from common.DBI import SQLiteManager
 #from common.utility import logger
 from cms_log import logger
-from common.DBI import SQLiteManager
 from urlparse import *
 import httplib
 # httplib.HTTPConnection.debuglevel = 5
@@ -250,5 +250,5 @@ def pub_articles_to_site(rest_session_headers, domain, bulk_size=1):
                 cnt_succ += 1
                 if cnt_succ == bulk_size and domain != 'all':
                     break
-    logger.debug('%d new articles are published.' % cnt_succ)
+    logger.info('%d new articles are published.' % cnt_succ)
 

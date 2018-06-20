@@ -32,15 +32,10 @@ class FoolSpider(CrawlSpider):
     def parse_start_url(self, response):
         logging.log(logging.INFO, 'parse_start_url(): %s' % response.url)
 
-        # 获得今天的日期
-        today = datetime.date.today()
         # 用今天日期减掉时间差，参数为1天，获得昨天的日期
-        three_day_ago = today - datetime.timedelta(days=FoolSpider.crawl_days)
-        month_three_day_ago = three_day_ago.strftime('%m')
-        year_three_day_ago = three_day_ago.strftime('%Y')
-
-        logging.log(logging.INFO, 'parse_start_url(): current year-month %s-%s' % (year_three_day_ago, month_three_day_ago))
-        sitemap_loc_url = (start_url + '/sitemap/%s/%s') % (year_three_day_ago, month_three_day_ago)
+        last_day = datetime.now() - datetime.timedelta(days=FoolSpider.crawl_days)
+        logging.log(logging.INFO, 'parse_start_url(): current year-month %s' % last_day.strftime('%Y-%m'))
+        sitemap_loc_url = (start_url + '/sitemap/%s/%s') % (year_three_day_ago, last_day.strftime('%Y/%m'))
         logging.log(logging.DEBUG, 'sitemap url: %s' % sitemap_loc_url)
         sitemap_request = Request(sitemap_loc_url, callback=self.parse_child_sitemap)
         sitemap_request.meta['dont_cache'] = True

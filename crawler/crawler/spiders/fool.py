@@ -70,36 +70,36 @@ class FoolSpider(CrawlSpider):
 
         logging.log(logging.INFO, 'parse_child_sitemap(): %d url to filter' % len(investing_url_list))
 
-        # 获得今天的日期
-        today = datetime.date.today()
-        # 用今天日期减掉时间差，参数为1天，获得昨天的日期
-        date_3_day_ago = today - datetime.timedelta(days=FoolSpider.crawl_days)
-        month_3_day_ago = date_3_day_ago.strftime('%m')
-        year_3_day_ago = date_3_day_ago.strftime('%Y')
-
-        day_counter = dict()
-        month_first, monday_last = calendar.monthrange(date_3_day_ago.year, date_3_day_ago.month)
-        for num in range(monday_last):
-            day = datetime.datetime.strptime(
-                '%s-%s-%s' % (year_3_day_ago, month_3_day_ago, '01'), '%Y-%m-%d') + datetime.timedelta(
-                days=+num)
-            day_counter[day.strftime('%Y/%m/%d')] = 0
-
-        for day_idx in day_counter.keys():
-            for url in investing_url_list:
-                if day_idx in url:
-                    if SQLiteManager.has_article('ArticleEN', url):
-                        day_counter[day_idx] += 1
-        logging.log(logging.INFO, 'parse_child_sitemap():\n%s' % str(day_counter))
+        max_crawler_days = 5
+        day_counter = OrderedDict()
+        for d in range(max_crawler_days):
+            last_day = datetime.now() - timedelta(days=d)
+            last_day_key = last_day.strftime('%Y/%m/%d')
+            day_counter[last_day_key] = list()
 
         download_url_list = list()
         max_download_per_day = 15
-        for day_idx in day_counter.keys():
-            for url in investing_url_list:
-                if day_idx in url:
-                    if day_counter[day_idx] < max_download_per_day:
-                        day_counter[day_idx] += 1
-                        download_url_list.append(url)
+        for url in investing_url_list:
+            key = ''
+            for k in day_counter.keys():
+                if k in url:
+                    key = k
+                    break
+            if key == '':
+                continue
+            if SQLiteManager.has_article('ArticleEN', url):
+                day_counter[key].append(url)
+
+        for url in investing_url_list:
+            key = ''
+            for k in day_counter.keys():
+                if k in url:
+                    key = k
+                    break
+            if key == '':
+                continue
+            if len(day_counter[key]) < max_download_per_day:
+                download_url_list.append(url)
 
         logging.log(logging.INFO, 'parse_child_sitemap(): %d url to be downloaded' % len(download_url_list))
 

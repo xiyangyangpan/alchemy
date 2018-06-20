@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
-import datetime
+import json
 import calendar
 import unicodedata
 from datetime import datetime, timedelta
@@ -86,7 +86,7 @@ class FoolSpider(CrawlSpider):
                 continue
             if SQLiteManager.has_article('ArticleEN', url):
                 day_counter[key].append(url)
-        logging.log(logging.DEBUG, 'parse_child_sitemap():\n%s' % str(day_counter))
+        logging.log(logging.DEBUG, 'parse_child_sitemap():\n%s' % json.dumps(day_counter, indent=4))
 
         for url in investing_url_list:
             key = ''

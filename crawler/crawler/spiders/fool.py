@@ -35,7 +35,7 @@ class FoolSpider(CrawlSpider):
         # 用今天日期减掉时间差，参数为1天，获得昨天的日期
         last_day = datetime.now() - timedelta(days=FoolSpider.crawl_days)
         logging.log(logging.INFO, 'parse_start_url(): current year-month %s' % last_day.strftime('%Y-%m'))
-        sitemap_loc_url = (start_url + '/sitemap/%s/%s') % (year_three_day_ago, last_day.strftime('%Y/%m'))
+        sitemap_loc_url = start_url + '/sitemap/%s' % last_day.strftime('%Y/%m')
         logging.log(logging.DEBUG, 'sitemap url: %s' % sitemap_loc_url)
         sitemap_request = Request(sitemap_loc_url, callback=self.parse_child_sitemap)
         sitemap_request.meta['dont_cache'] = True

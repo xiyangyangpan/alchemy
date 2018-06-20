@@ -90,6 +90,7 @@ class FoolSpider(CrawlSpider):
                 if day_idx in url:
                     if SQLiteManager.has_article('ArticleEN', url):
                         day_counter[day_idx] += 1
+        logging.log(logging.INFO, 'parse_child_sitemap():\n%s' % str(day_counter))
 
         download_url_list = list()
         max_download_per_day = 15
@@ -105,7 +106,7 @@ class FoolSpider(CrawlSpider):
         # send URL download request
         for url in download_url_list:
             logging.log(logging.INFO, 'request %s' % url)
-            yield Request(url, callback=self.parse_article)
+            #yield Request(url, callback=self.parse_article)
 
     def parse_article(self, response):
         logging.log(logging.DEBUG, type(response))

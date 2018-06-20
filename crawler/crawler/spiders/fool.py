@@ -97,6 +97,7 @@ class FoolSpider(CrawlSpider):
             if key == '':
                 continue
             if len(day_counter[key]) < max_download_per_day:
+                day_counter[key].append(url)
                 download_url_list.append(url)
 
         logging.log(logging.INFO, 'parse_child_sitemap(): %d url to be downloaded' % len(download_url_list))

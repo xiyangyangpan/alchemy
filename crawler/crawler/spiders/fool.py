@@ -67,7 +67,7 @@ class FoolSpider(CrawlSpider):
 
         logging.log(logging.INFO, 'parse_child_sitemap(): %d url to filter' % len(investing_url_list))
 
-        max_crawler_days = 20
+        max_crawler_days = 30
         day_counter = OrderedDict()
         for d in range(max_crawler_days):
             last_day = datetime.now() - timedelta(days=d)
@@ -105,7 +105,7 @@ class FoolSpider(CrawlSpider):
         # send URL download request
         for url in download_url_list:
             logging.log(logging.INFO, 'request %s' % url)
-            #yield Request(url, callback=self.parse_article)
+            yield Request(url, callback=self.parse_article)
 
     def parse_article(self, response):
         logging.log(logging.DEBUG, type(response))

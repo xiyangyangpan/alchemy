@@ -96,7 +96,7 @@ class FoolSpider(CrawlSpider):
                     break
             if key == '':
                 continue
-            if len(day_counter[key]) < max_download_per_day:
+            if len(day_counter[key]) < max_download_per_day and url not in day_counter[key]:
                 day_counter[key].append(url)
                 download_url_list.append(url)
 

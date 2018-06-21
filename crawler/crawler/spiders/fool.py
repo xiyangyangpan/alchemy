@@ -67,9 +67,9 @@ class FoolSpider(CrawlSpider):
 
         logging.log(logging.DEBUG, 'parse_child_sitemap(): %d url to filter' % len(investing_url_list))
 
-        max_crawler_days = 30
+        max_traceback_days = 30
         day_counter = OrderedDict()
-        for d in range(max_crawler_days):
+        for d in range(max_traceback_days):
             last_day = datetime.now() - timedelta(days=d)
             last_day_key = last_day.strftime('%Y/%m/%d')
             day_counter[last_day_key] = list()
@@ -86,7 +86,7 @@ class FoolSpider(CrawlSpider):
                 continue
             if SQLiteManager.has_article('ArticleEN', url):
                 day_counter[key].append(url)
-        logging.log(logging.DEBUG, 'parse_child_sitemap():\n%s' % json.dumps(day_counter, indent=4))
+        logging.log(logging.DEBUG, 'parse_child_sitemap(): articles in database\n%s' % json.dumps(day_counter, indent=4))
 
         for url in investing_url_list:
             key = ''

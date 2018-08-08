@@ -28,6 +28,7 @@ class FoolSpider(CrawlSpider):
     cls_db_mgr = None
     fetched_cnt = 0
     crawl_days = 1
+    max_fetched_article_per_day = 20
 
     def parse_start_url(self, response):
         logging.log(logging.INFO, 'parse_start_url(): %s' % response.url)
@@ -75,7 +76,7 @@ class FoolSpider(CrawlSpider):
             day_counter[last_day_key] = list()
 
         download_url_list = list()
-        max_download_per_day = 15
+        max_download_per_day = FoolSpider.max_fetched_article_per_day
         for url in investing_url_list:
             key = ''
             for k in day_counter.keys():

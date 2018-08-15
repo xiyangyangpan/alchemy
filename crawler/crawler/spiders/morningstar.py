@@ -17,14 +17,14 @@ import ConfigParser
 
 cp = ConfigParser.SafeConfigParser()
 cp.read('alchemy.conf')
-allowed_domain = cp.get('crawler', 'allowed_domain')
-start_url = cp.get('crawler', 'start_url')
+allowed_domain = cp.get('crawler2', 'allowed_domain')
+start_url = cp.get('crawler2', 'start_url')
 
 
-class FoolSpider(CrawlSpider):
+class MorningstarSpider(CrawlSpider):
     name = 'morningstar'
     allowed_domains = [allowed_domain]
-    start_urls = [start_url+'/sitemap']
+    start_urls = [start_url+'blog/sitemap.xml']
     cls_db_mgr = None
     fetched_cnt = 0
     crawl_days = 1

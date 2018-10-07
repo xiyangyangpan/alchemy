@@ -24,7 +24,7 @@ start_url = cp.get('crawler2', 'start_url')
 class MorningstarSpider(CrawlSpider):
     name = 'morningstar'
     allowed_domains = [allowed_domain]
-    start_urls = [start_url+'blog/sitemap.xml']
+    start_urls = [start_url+'/articles/archive/articles-archive.html']
     cls_db_mgr = None
     fetched_cnt = 0
     crawl_days = 1
@@ -33,14 +33,39 @@ class MorningstarSpider(CrawlSpider):
     def parse_start_url(self, response):
         logging.log(logging.INFO, 'parse_start_url(): %s' % response.url)
 
+        tr_list = response.css('#archive-table > tbody > tr')
+        for tr in tr_list:
+            td_list = tr.css('td')
+            td_title = td_list[0]
+            td_collection = td_list[1]
+            td_author = td_list[2]
+            td_date = td_list[3]
+
+            article_title = td_title.css('a::text').extract_first()
+            article_link = td_title.css('a::attr("href")').extract_first()
+            logging.log(logging.DEBUG, 'title: %s' % article_title)
+            logging.log(logging.DEBUG, 'link: %s' % article_link)
+
+            article_collection = td_collection.css('a::text').extract_first()
+            logging.log(logging.DEBUG, 'collection: %s' % article_collection)
+
+            article_author = td_author.css('a::text').extract_first()
+            logging.log(logging.DEBUG, 'author: %s' % article_author)
+
+            article_date = td_date.css('td::text').extract_first().strip()
+            logging.log(logging.DEBUG, 'date: %s\n' % article_date)
+            #break
+
         # 用今天日期减掉时间差，参数为1天，获得昨天的日期
-        last_day = datetime.now() - timedelta(days=FoolSpider.crawl_days)
-        logging.log(logging.INFO, 'parse_start_url(): current year-month %s' % last_day.strftime('%Y-%m'))
-        sitemap_loc_url = start_url + '/sitemap/%s' % last_day.strftime('%Y/%m')
-        logging.log(logging.DEBUG, 'sitemap url: %s' % sitemap_loc_url)
-        sitemap_request = Request(sitemap_loc_url, callback=self.parse_child_sitemap)
-        sitemap_request.meta['dont_cache'] = True
-        yield sitemap_request
+        #last_day = datetime.now() - timedelta(days=MorningstarSpider.crawl_days)
+        #logging.log(logging.INFO, 'parse_start_url(): current year-month %s' % last_day.strftime('%Y-%m'))
+        
+        #sitemap_loc_url = start_url + '/sitemap/%s' % last_day.strftime('%Y/%m')
+        #logging.log(logging.DEBUG, 'sitemap url: %s' % sitemap_loc_url)
+        #sitemap_request = Request(sitemap_loc_url, callback=self.parse_child_sitemap)
+        #sitemap_request.meta['dont_cache'] = True
+        # yield sitemap_request
+
 
     def parse_child_sitemap(self, response):
         logging.log(logging.INFO, 'parse_child_sitemap(): %s' % response.url)
@@ -76,7 +101,7 @@ class MorningstarSpider(CrawlSpider):
             day_counter[last_day_key] = list()
 
         download_url_list = list()
-        max_download_per_day = FoolSpider.max_fetched_article_per_day
+        max_download_per_day = MorningstarSpider.max_fetched_article_per_day
         for url in investing_url_list:
             key = ''
             for k in day_counter.keys():
@@ -110,7 +135,7 @@ class MorningstarSpider(CrawlSpider):
 
     def parse_article(self, response):
         logging.log(logging.DEBUG, type(response))
-        FoolSpider.fetched_cnt += 1
+        MorningstarSpider.fetched_cnt += 1
  
         mainTitle = response.css('div#article-1.full_article > section.usmf-new.article-header > header > h1::text').extract_first()
         if mainTitle is None: mainTitle = ''

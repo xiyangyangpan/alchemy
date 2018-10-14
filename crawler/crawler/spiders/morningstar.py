@@ -12,6 +12,8 @@ from scrapy.spiders import CrawlSpider, Rule
 from scrapy.http import Request
 from crawler.items import FoolItem
 from crawler.items import AlchemyItem
+from crawler.items import ArticleItem
+from crawler.items import AuthorItem
 from common.DBI import SQLiteManager
 import ConfigParser
 
@@ -54,7 +56,11 @@ class MorningstarSpider(CrawlSpider):
 
             article_date = td_date.css('td::text').extract_first().strip()
             logging.log(logging.DEBUG, 'date: %s\n' % article_date)
-            #break
+
+            # generate request to download and parse an article
+            full_url = start_url + '/' + article_link
+            yield Request(full_url, callback=self.parse_article)
+            break
 
         # 用今天日期减掉时间差，参数为1天，获得昨天的日期
         #last_day = datetime.now() - timedelta(days=MorningstarSpider.crawl_days)
@@ -134,43 +140,45 @@ class MorningstarSpider(CrawlSpider):
             yield Request(url, callback=self.parse_article)
 
     def parse_article(self, response):
+        logging.log(logging.DEBUG, '------------------------------------------')
         logging.log(logging.DEBUG, type(response))
         MorningstarSpider.fetched_cnt += 1
  
-        mainTitle = response.css('div#article-1.full_article > section.usmf-new.article-header > header > h1::text').extract_first()
+        mainTitle = response.css('.article-title::text').extract_first()
         if mainTitle is None: mainTitle = ''
-        
-        subTitle = response.css('div#article-1.full_article > section.usmf-new.article-header > header > h2::text').extract_first()
-        if subTitle is None: subTitle = ''
-        
-        content = response.css('span.article-content').extract_first()
+        logging.log(logging.DEBUG, 'title: %s' % mainTitle)
+                
+        content = response.css('.article-main').extract()
         if content is None: content = ''
+        #logging.log(logging.DEBUG, 'content: %s' % content)
 
         # extract author name
-        authorName = response.css('div.author-name::text').extract_first()
+        authorName = response.css('.article-signature .msiip.authors .msiip.author .name b::text').extract_first()
         if authorName is None: authorName = ''
-        
+        logging.log(logging.DEBUG, 'authorName: %s' % authorName)
+
         # extract publish date
-        publishDate = response.css('div.publication-date::text').extract_first()
+        publishDate = response.css('.article-signature .article-date::text').extract_first()
         if publishDate is None:
             logging.log(logging.ERROR, 'fail to extract div.publication-date::text')
             sys.exit(1)
-        
-        articleTag = response.xpath('//meta[contains(@property,"article:tag")]/@content').extract_first()
+        logging.log(logging.DEBUG, 'publishDate: %s' % publishDate)
+
+        publishTime = response.css('head meta[name=buildTimestamp]::attr("content")').extract_first()
+        logging.log(logging.DEBUG, 'publishTime: %s' % publishTime)
+
+        articleTag = response.css('.article-eyebrow a::text').extract_first()
         if articleTag is None: articleTag = ''
-        
-        articleSection = response.xpath('//meta[contains(@property,"article:section")]/@content').extract_first()
-        if articleSection is None: articleSection = ''
-        
-        item = FoolItem()
+        logging.log(logging.DEBUG, 'articleTag: %s' % articleTag)
+       
+        item = ArticleItem()
         item['url'] = response.url
         item['mainTitle'] = mainTitle
-        item['subTitle'] = subTitle
         item['articleTag'] = articleTag
-        item['articleSection'] = articleSection
-        item['authorName'] = authorName.strip()
-        item['publishDate'] = publishDate.strip()
+        item['authorId'] = authorName.strip()
+        #item['publishDate'] = publishDate.strip()
         item['publishTime'] = None
+        return
 
         if isinstance(content, str):
             item['content'] = content

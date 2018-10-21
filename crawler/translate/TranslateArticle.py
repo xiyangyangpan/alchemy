@@ -12,6 +12,7 @@ from common.DBI import ArticleCN
 from common.DBI import SQLiteManager
 from ArticleElem import ArticleElem
 from BaiduApi import BaiduTranslator
+from Translator import Translator
 from ts_log import logger
 
 depth = 0
@@ -322,6 +323,27 @@ def translate_articles(bulk_size=1):
     logger.info('translating summary:\n\tsuccess = %d\n\tfail = %d' % (success_count, fail_count))
 
 # ----------------------------------------------------------------------------------
+# Description: generate html file
+#              and convert html format article
+# Output: chinese html byte stream
+# ----------------------------------------------------------------------------------
+def gen_html(file_name, content):
+    import bs4
+
+    # load the file
+    with open("www/template.html") as inf:
+        txt = inf.read()
+        soup = bs4.BeautifulSoup(txt)
+
+    # insert it into the document
+    content_tag = BeautifulSoup(content, 'html.parser')
+    soup.body.append(content_tag)
+
+    # save the file again
+    with open("www/" + file_name, "w") as outf:
+        outf.write(str(soup))
+
+# ----------------------------------------------------------------------------------
 # Description: parse origin html format article content, translate to chinese text
 #              and convert html format article
 # Input:
@@ -343,7 +365,8 @@ def translate_orig_articles(bulk_size=1):
         logger.info('begin translate article %s' % url)
 
         # set the translate method for all ArticleElem
-        translator_vendor = BaiduTranslator()
+        #translator_vendor = BaiduTranslator()
+        translator_vendor = Translator()
         if bulk_size >= 0:
             ArticleElem.translator = translator_vendor
 
@@ -359,6 +382,8 @@ def translate_orig_articles(bulk_size=1):
         # pickle object with protocol version 2 compatible with python 2.x
         #article_cn.content = zlib.compress(pickle.dumps(content_cn, protocol=2))
         article.contentCN = zlib.compress(pickle.dumps(content_cn))
+        gen_html('en_article.html', content_en)
+        gen_html('cn_article.html', content_cn)
 
         logger.debug('ready to store the translated article.')
         #if SQLiteManager.upd_article(article):

@@ -4,6 +4,7 @@ import json
 import calendar
 import unicodedata
 from datetime import datetime, timedelta
+import dateutil.parser as dp
 from collections import OrderedDict
 import sys
 import scrapy
@@ -13,7 +14,6 @@ from scrapy.http import Request
 from crawler.items import FoolItem
 from crawler.items import AlchemyItem
 from crawler.items import ArticleItem
-from crawler.items import AuthorItem
 from common.DBI import SQLiteManager
 import ConfigParser
 
@@ -26,15 +26,24 @@ start_url = cp.get('crawler2', 'start_url')
 class MorningstarSpider(CrawlSpider):
     name = 'morningstar'
     allowed_domains = [allowed_domain]
-    start_urls = [start_url+'/articles/archive/articles-archive.html']
     cls_db_mgr = None
     fetched_cnt = 0
     crawl_days = 1
     max_fetched_article_per_day = 20
 
+    def start_requests(self):
+        start_urls = [
+            start_url + '/articles/archive/articles-archive.html'
+        ]
+        for url in start_urls:
+            startRequest = Request(url=url, callback=self.parse_start_url)
+            #startRequest.meta['dont_cache'] = True
+            yield startRequest
+
     def parse_start_url(self, response):
         logging.log(logging.INFO, 'parse_start_url(): %s' % response.url)
 
+        cnt = 0
         tr_list = response.css('#archive-table > tbody > tr')
         for tr in tr_list:
             td_list = tr.css('td')
@@ -60,7 +69,9 @@ class MorningstarSpider(CrawlSpider):
             # generate request to download and parse an article
             full_url = start_url + '/' + article_link
             yield Request(full_url, callback=self.parse_article)
-            break
+
+            cnt += 1
+            if cnt > 2: break
 
         # 用今天日期减掉时间差，参数为1天，获得昨天的日期
         #last_day = datetime.now() - timedelta(days=MorningstarSpider.crawl_days)
@@ -140,59 +151,68 @@ class MorningstarSpider(CrawlSpider):
             yield Request(url, callback=self.parse_article)
 
     def parse_article(self, response):
-        logging.log(logging.DEBUG, '------------------------------------------')
+        logging.log(logging.DEBUG, '---------------------------------------------')
         logging.log(logging.DEBUG, type(response))
         MorningstarSpider.fetched_cnt += 1
  
-        mainTitle = response.css('.article-title::text').extract_first()
-        if mainTitle is None: mainTitle = ''
+        #------------------------------------------------------------------
+        # extract article info
+        #------------------------------------------------------------------
+        # main title
+        mainTitle = response.css('.article-header .article-title::text').extract_first()
         logging.log(logging.DEBUG, 'title: %s' % mainTitle)
-                
-        content = response.css('.article-main').extract()
-        if content is None: content = ''
-        #logging.log(logging.DEBUG, 'content: %s' % content)
 
-        # extract author name
-        authorName = response.css('.article-signature .msiip.authors .msiip.author .name b::text').extract_first()
-        if authorName is None: authorName = ''
-        logging.log(logging.DEBUG, 'authorName: %s' % authorName)
+        # article tag
+        articleTag = response.css('.article-header .article-eyebrow a::text').extract_first()
+        logging.log(logging.DEBUG, 'articleTag: %s' % articleTag)
 
-        # extract publish date
-        publishDate = response.css('.article-signature .article-date::text').extract_first()
-        if publishDate is None:
-            logging.log(logging.ERROR, 'fail to extract div.publication-date::text')
+        # article content
+        content = response.css('.article-main').extract_first()
+        if isinstance(content, str):
+            logging.log(logging.DEBUG, "content ordinary string")
+        elif isinstance(content, unicode):
+            logging.log(logging.DEBUG, "content unicode string, convert to UTF-8")
+            content = unicodedata.normalize('NFKD', content).encode('ascii', 'ignore').encode("UTF-8")
+        else:
+            logging.error("content not a string")
             sys.exit(1)
-        logging.log(logging.DEBUG, 'publishDate: %s' % publishDate)
 
-        publishTime = response.css('head meta[name=buildTimestamp]::attr("content")').extract_first()
+        # publish timestamp
+        iso_time = response.css('head meta[name=buildTimestamp]::attr("content")').extract_first()
+        publishTime = dp.parse(iso_time).strftime("%Y%m%d%H%M%S")
         logging.log(logging.DEBUG, 'publishTime: %s' % publishTime)
 
-        articleTag = response.css('.article-eyebrow a::text').extract_first()
-        if articleTag is None: articleTag = ''
-        logging.log(logging.DEBUG, 'articleTag: %s' % articleTag)
-       
+        #------------------------------------------------------------------
+        # extract author signature and sub-info
+        #------------------------------------------------------------------
+        article_signature = response.css('.article-signature')
+        # author name
+        authorName = article_signature.css('b[data-authoremail]::text').extract_first()
+        logging.log(logging.DEBUG, 'authorName: %s' % authorName)
+        # author email
+        authorEmail = article_signature.css('b[data-authoremail]::attr("data-authoremail")').extract_first()
+        logging.log(logging.DEBUG, 'authorEmail: %s' % authorEmail)
+        # author info
+        authorInfo = article_signature.css('div .popover-content ul.menu li::text').extract_first().strip()
+        logging.log(logging.DEBUG, 'authorInfo: %s' % authorInfo)
+        #logging.log(logging.DEBUG, '---------------------------------------------')
+
+        #------------------------------------------------------------------
+        # populate item
+        #------------------------------------------------------------------
         item = ArticleItem()
         item['url'] = response.url
         item['mainTitle'] = mainTitle
+        item['content'] = content
         item['articleTag'] = articleTag
-        item['authorId'] = authorName.strip()
-        #item['publishDate'] = publishDate.strip()
-        item['publishTime'] = None
-        return
-
-        if isinstance(content, str):
-            item['content'] = content
-            logging.log(logging.DEBUG, "parse_article(): content is ordinary string")
-        elif isinstance(content, unicode):
-            logging.log(logging.DEBUG, "parse_article(): content is unicode string, convert to UTF-8 string.")
-            content = unicodedata.normalize('NFKD', content).encode('ascii', 'ignore')
-            item['content'] = content.encode("UTF-8")
-        else:
-            logging.error("not a string")
-            sys.exit(1)
+        item['articleSection'] = None
+        item['publishTime'] = publishTime
+        item['authorName'] = authorName
+        item['authorEmail'] = authorEmail
+        item['authorInfo'] = authorInfo
 
         # debug
-        logging.log(logging.INFO, 'url=%s mainTitle=%s publishDate=%s' % (item['url'], item['mainTitle'], item['publishDate']))
+        logging.log(logging.INFO, 'url=%s mainTitle=%s publishTime=%s' % (item['url'], item['mainTitle'], item['publishTime']))
         logging.log(logging.INFO, 'extract article from HTML response ok!')
         logging.log(logging.INFO, '--------------------------------------')
         return item

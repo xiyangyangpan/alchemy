@@ -29,31 +29,29 @@ class ArticleItem(scrapy.Item):
     # define the fields for your item here like:
     # article full URL, index key
     url = scrapy.Field()
-
-    # id to author item, forign index
-    authorId = scrapy.Field()
-
     # article title
     mainTitle = scrapy.Field()
     # article content
     content = scrapy.Field()
     # article tag
     articleTag = scrapy.Field()
+    # article section
+    articleSection = scrapy.Field()
     # article time
-    publishTime = scrapy.Field()   
-
-class AuthorItem(scrapy.Item):
-    # define the fields for your item here like:
-    # id to author item, index key
+    publishTime = scrapy.Field()
+    # author id
     authorId = scrapy.Field()
+    # author name
+    authorName = scrapy.Field()
+    # email
+    authorEmail = scrapy.Field()
+    # info (English)
+    authorInfo = scrapy.Field()
+    # info (Chinese)
+    authorInfoCN = scrapy.Field()
+    
+    def __str__(self):
+        return 'ArticleItem: %s %s' % (self['url'], self['mainTitle'])
 
-    # article title
-    mainTitle = scrapy.Field()
-    # article content
-    content = scrapy.Field()
-    # article tag
-    articleTag = scrapy.Field()
-    # article time
-    publishTime = scrapy.Field()   
 
 

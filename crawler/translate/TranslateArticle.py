@@ -202,6 +202,39 @@ def translate_content(orig_content):
             logger.error(e)
             sys.exit(1)
 
+def translate_orig_article_content(orig_content):
+    # translate content
+    sel = Selector(text=orig_content)
+    for css_div in sel.css('.article-main').extract():
+        try:
+            soup_tree = BeautifulSoup(css_div, 'lxml')
+
+            # remove embed advertisement filtering by 'div class="interad"'
+            for adv in soup_tree.find_all('div', class_='interad'):
+                adv.decompose()
+
+            # extract content from original source HTML
+            logger.info('begin extracting content ...')
+            article_elem = ArticleElem('BODY', '')
+            extract_content(soup_tree, article_elem, debug=False)
+            # logger.debug('\n' + article_elem.to_str())
+            logger.info('end extracting content!')
+
+            # translate original text into chinese text
+            logger.info('begin translating content ...')
+            article_elem.translate()
+            logger.info('end translating content!')
+
+            # convert tree to HTML tree
+            html_tree = article_elem.to_html(article_elem, None, None)
+            # logger.debug(html_tree.prettify('utf-8', formatter='html'))
+
+            return str(html_tree)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            logger.error(e)
+            sys.exit(1)
 
 # ----------------------------------------------------------------------------------
 # Description: parse origin html format article content, translate to chinese text
@@ -288,6 +321,61 @@ def translate_articles(bulk_size=1):
             break
     logger.info('translating summary:\n\tsuccess = %d\n\tfail = %d' % (success_count, fail_count))
 
+# ----------------------------------------------------------------------------------
+# Description: parse origin html format article content, translate to chinese text
+#              and convert html format article
+# Input:
+#   original html byte stream from MySQL DB
+#   bulk size: translation articles per bulk
+# Output: chinese html byte stream
+# ----------------------------------------------------------------------------------
+def translate_orig_articles(bulk_size=1):
+    logger.info('Loads articles from DB then translates articles\n')
+    success_count, fail_count = 0, 0
+
+    # for article in SQLiteManager.all_article('ArticleEN'):
+    for url in SQLiteManager.query_un_translated_orig_article():
+        article = SQLiteManager.get_article('ArticleOrig', url)
+        if article is None:
+            logger.error('error get article!! URL: %s\n' % url)
+            continue
+
+        logger.info('begin translate article %s' % url)
+
+        # set the translate method for all ArticleElem
+        translator_vendor = BaiduTranslator()
+        if bulk_size >= 0:
+            ArticleElem.translator = translator_vendor
+
+        # translate main title
+        main_title = unicodedata.normalize('NFKD', article.mainTitle).encode('ascii', 'ignore')
+        article.mainTitleCN = translator_vendor.translate(main_title)
+        logger.debug('Main Title: %s' % article.mainTitleCN)
+
+        # translate content
+        content_en = pickle.loads(zlib.decompress(article.content))
+        content_cn = translate_orig_article_content(content_en)
+
+        # pickle object with protocol version 2 compatible with python 2.x
+        #article_cn.content = zlib.compress(pickle.dumps(content_cn, protocol=2))
+        article.contentCN = zlib.compress(pickle.dumps(content_cn))
+
+        logger.debug('ready to store the translated article.')
+        #if SQLiteManager.upd_article(article):
+        #    logger.debug('successfully store article(%s)\n' % article.mainTitle)
+        #    success_count += 1
+        #    bulk_size -= 1
+        #else:
+        #    logger.debug('fails to store translated article(%s) into database\n' % article_cn.mainTitle)
+        #    fail_count += 1
+        logger.debug('\n')
+        break
+
+        # translate a bulk of articles every execution
+        if bulk_size == 0:
+            break
+    logger.info('translating summary:\n\tsuccess = %d\n\tfail = %d' % (success_count, fail_count))
+
 
 # ----------------------------------------------------------------------------------
 # Description: translate chinese article tags
@@ -313,4 +401,4 @@ def tr_article_tags(bulk_size=20):
 
 
 if __name__ == "__main__":
-    translate_articles(bulk_size=1)
+    translate_orig_articles(bulk_size=1)

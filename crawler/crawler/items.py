@@ -43,8 +43,10 @@ class ArticleItem(scrapy.Item):
     authorId = scrapy.Field()
     # author name
     authorName = scrapy.Field()
-    # email
-    authorEmail = scrapy.Field()
+    # email or contact
+    authorContact = scrapy.Field()
+    # author link
+    authorLink = scrapy.Field()
     # info (English)
     authorInfo = scrapy.Field()
     # info (Chinese)

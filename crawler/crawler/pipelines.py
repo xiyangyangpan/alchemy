@@ -7,6 +7,7 @@
 import logging
 from common.DBI import ArticleEN, ArticleOrig
 from common.DBI import SQLiteManager
+from common.DBI import AuthorCard
 
 
 class CrawlerPipeline(object):
@@ -19,9 +20,9 @@ class CrawlerPipeline(object):
                 logging.log(logging.DEBUG, 'CrawlerPipeline::process_item(): article already exists')
                 return
             else:
-                authorId = SQLiteManager.has_author(item)
+                authorId = AuthorCard.has_author(item)
                 if authorId is None:
-                    authorId = SQLiteManager.add_author(item)
+                    authorId = AuthorCard.add_author(item)
                     logging.log(logging.DEBUG, 'CrawlerPipeline::process_item(): store author in database')
                 item['authorId'] = authorId
                 logging.log(logging.DEBUG, 'CrawlerPipeline::process_item(): store article in database')

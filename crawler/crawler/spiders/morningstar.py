@@ -194,7 +194,18 @@ class MorningstarSpider(CrawlSpider):
         logging.log(logging.DEBUG, 'authorEmail: %s' % authorEmail)
         # author info
         authorInfo = article_signature.css('div .popover-content ul.menu li::text').extract_first().strip()
-        logging.log(logging.DEBUG, 'authorInfo: %s' % authorInfo)
+        if isinstance(authorInfo, str):
+            logging.log(logging.DEBUG, "authorInfo ordinary string")
+        elif isinstance(authorInfo, unicode):
+            logging.log(logging.DEBUG, "authorInfo unicode string, convert to UTF-8")
+            authorInfo = unicodedata.normalize('NFKD', authorInfo).encode('ascii', 'ignore').encode("UTF-8")
+        else:
+            logging.error("authorInfo not a string")
+            sys.exit(1)
+        logging.log(logging.DEBUG, 'authorInfo: %s' % repr(authorInfo))
+        # author link
+        authorLink = article_signature.css('div .popover-content ul.menu li a::attr("href")').extract_first().strip()
+        logging.log(logging.DEBUG, 'authorLink: %s' % authorLink)
         #logging.log(logging.DEBUG, '---------------------------------------------')
 
         #------------------------------------------------------------------
@@ -208,8 +219,9 @@ class MorningstarSpider(CrawlSpider):
         item['articleSection'] = None
         item['publishTime'] = publishTime
         item['authorName'] = authorName
-        item['authorEmail'] = authorEmail
+        item['authorContact'] = authorEmail
         item['authorInfo'] = authorInfo
+        item['authorLink'] = start_url + authorLink
 
         # debug
         logging.log(logging.INFO, 'url=%s mainTitle=%s publishTime=%s' % (item['url'], item['mainTitle'], item['publishTime']))

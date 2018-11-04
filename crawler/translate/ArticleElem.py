@@ -11,11 +11,14 @@ class ArticleElem(object):
     debug = False
     translator = None
 
-    def __init__(self, article_type, article_text='', img_alt='', img_src=''):
+    def __init__(self, article_type, article_text, ori_node=None):
         self.type = article_type
         self.text = article_text
-        self.img_alt = img_alt
-        self.img_src = img_src
+        if article_type == 'IMG':
+            self.img_alt = ori_node['alt']
+            self.img_src = ori_node['src']
+            if '//im.' in self.img_src:  # IMG URL for morningstar.com
+                self.img_src = 'https:' + self.img_src
         self.children = list()
 
     @staticmethod
@@ -39,10 +42,10 @@ class ArticleElem(object):
 
     def translate(self):
         if len(self.text) > 0:
-            logger.debug("%s: %s\n" % (type, self.text))
+            #logger.debug("%s: %s\n" % (type, self.text))
             if self.type not in ['IMG', 'TABLE', 'BLOCKQUOTE'] and ArticleElem.translator:
                 self.text = ArticleElem.translator.translate(self.text)
-                logger.debug("%s: %s\n" % (type, self.text))
+                #logger.debug("%s: %s\n" % (type, self.text))
 
         for d in self.children:
             d.translate()
@@ -56,15 +59,12 @@ class ArticleElem(object):
             html_str = '<html xmlns="http://www.w3.org/1999/xhtml" class="widthauto"></html>'
             soup = BeautifulSoup(html_str, 'lxml')
             html_tag = soup.html
-
             head_tag = soup.new_tag('head')
             html_tag.append(head_tag)
-
             meta_tag = soup.new_tag('meta')
             meta_tag['http-equiv'] = "Content-Type"
             meta_tag['content'] = "text/html; charset=gbk"
             head_tag.append(meta_tag)
-
             html_node = soup.html
 
         if ArticleElem.debug:
@@ -85,6 +85,11 @@ class ArticleElem(object):
             p_tag.string = article_node.text
             html_node.append(p_tag)
             html_node = p_tag
+        elif article_node.type == 'EM':
+            em_tag = soup.new_tag('em')
+            em_tag.string = article_node.text
+            html_node.append(em_tag)
+            html_node = em_tag
         elif article_node.type == 'HEAD':
             h2_tag = soup.new_tag('h2')
             h2_tag.string = article_node.text
@@ -100,7 +105,6 @@ class ArticleElem(object):
         elif article_node.type == 'TABLE':
             # enclosed the table in <p> tag
             html_node['class'] = "table-responsive"
-
             # convert table string to table tag tree
             table_soup = BeautifulSoup(article_node.text, 'html.parser')
             table_tag = table_soup.table

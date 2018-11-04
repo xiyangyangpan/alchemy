@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 from bs4 import NavigableString
 from common.DBI import ArticleCN
 from common.DBI import SQLiteManager
+from common.DBI import AuthorCard
 from ArticleElem import ArticleElem
 from BaiduApi import BaiduTranslator
 from Translator import Translator
@@ -59,7 +60,8 @@ def prt_tree(root, depth_num):
 # Output: true/false
 def has_sub_tag(root, tag_list):
     for child in root.contents:
-        if child.name in tag_list:
+        tag_name = child.name
+        if tag_name and tag_name.upper() in tag_list:
             return True
     return False
 
@@ -67,107 +69,91 @@ def has_sub_tag(root, tag_list):
 # Description: deep-first-search origin html format article content
 # Input: original html byte stream
 # Output: tree of ArticleElem, every node contains origin paragraph text
-def extract_content(root, article_elem, debug=False):
+def extract_content(ori_node, new_node, debug=False):
     global depth
     depth += 1
     if debug:
-        logger.debug(prt_tree(root, depth))
+        logger.debug(prt_tree(ori_node, depth))
 
     rs = ''
-    if isinstance(root, NavigableString):
-        rs = root
+    if isinstance(ori_node, NavigableString):
+        # NavigableString node is leaf node, no need traverse sub HTML node
+        rs = ori_node
+        depth -= 1
+        return rs
     else:
         # visit self before visiting children
-        if root.name == 'div':
-            if debug:
-                logger.debug(prt_fmt('begin extracting a DIV', depth))
+        tag_name = ori_node.name.upper()
+        if debug:
+            if tag_name in ['DIV', 'TABLE', 'BLOCKQUOTE', 'H2', 'P', 'EM', 'IMG']:
+                logger.debug(prt_fmt('+++ BEGIN %s +++' % tag_name, depth))
 
+        if tag_name == 'DIV':
             # if the div node has sub-tag e.g. div, p, img, table, create new Elem;
             # otherwise, ignore the tag
-            if has_sub_tag(root, ['div', 'p', 'img', 'table']):
+            if has_sub_tag(ori_node, ['DIV', 'P', 'IMG', 'TABLE', 'EM']):
                 div_obj = ArticleElem('DIV', '')
-                article_elem.add(div_obj)
-                article_elem = div_obj
-        elif root.name in ['table', 'blockquote']:
-            if debug:
-                logger.debug(prt_fmt('begin extracting a TABLE/BLOCKQUOTE', depth))
-        elif root.name in ['h2']:
-            if debug:
-                logger.debug(prt_fmt('begin extracting a HEAD', depth))
-        elif root.name in ['p']:
-            if debug:
-                logger.debug(prt_fmt('begin extracting a paragraph', depth))
-        elif root.name in ['img']:
-            if debug:
-                logger.debug(prt_fmt('begin extracting a IMG', depth))
-        else:
-            pass
+                new_node.add(div_obj)
+                new_node = div_obj
 
-        # visit children
+        # --------------------------------------------------------
+        # visit child nodes
         # ignore process child if encountering embed table tag
-        if root.name not in ['table', 'blockquote']:
-            for child in root.contents:
-                bq = extract_content(child, article_elem, debug)
-                if isinstance(bq, str):
-                    bq = bq.replace(u'\xa0', u' ')
-                elif isinstance(bq, unicode):
+        # --------------------------------------------------------
+        if tag_name not in ['TABLE', 'BLOCKQUOTE']:
+            for child in ori_node.contents:
+                bq_text = extract_content(child, new_node, debug).strip()
+                if isinstance(bq_text, str):
+                    bq_text = bq_text.replace(u'\xa0', u' ')
+                elif isinstance(bq_text, unicode):
                     pass
-                rs += bq
+                rs += bq_text
 
-        # visit self after visiting children
-        sub_element = None
-        if root.name == 'div':
-            if debug:
-                logger.debug(prt_fmt('end extract DIV: %s' % repr(rs), depth))
+        # --------------------------------------------------------
+        # visit self node after visiting child html nodes
+        # --------------------------------------------------------
+        if debug:
+            if tag_name in ['DIV', 'H2', 'P']:
+                logger.debug(prt_fmt('--- END %s --- %s' % (tag_name, repr(rs)), depth))
+            elif tag_name in ['IMG']:
+                logger.debug(prt_fmt('--- END %s ---' % ori_node['alt'], depth))
+            elif tag_name in ['TABLE', 'BLOCKQUOTE']:
+                logger.debug(prt_fmt('--- END %s --- %s' % (tag_name, ori_node.prettify('utf-8', formatter='html')), depth))
+
+        new_sub_node = None
+        if tag_name == 'DIV':
             # embed table tag
-            if root.has_attr('class') and 'table-responsive' in root['class']:
+            if ori_node.has_attr('class') and 'table-responsive' in ori_node['class']:
                 pass
-            # if the div node don't have sub-tag e.g. div, p
-            elif has_sub_tag(root, ['div', 'p', 'img', 'table', 'blockquote']):
+            # discard null div tag if the div node don't have sub-tag e.g. div, p
+            elif has_sub_tag(ori_node, ['DIV', 'P', 'IMG', 'TABLE', 'BLOCKQUOTE', 'EM']):
                 pass
             else:
-                # ignore empty div tag and no sub-tag under it
+                # create a new DIV tag in article tree
                 if rs != '':
-                    sub_element = ArticleElem('DIV', unicodedata.normalize("NFKD", rs).encode('ascii', 'ignore'))
-        elif root.name in ['table']:
-            if debug:
-                logger.debug(prt_fmt('end extract TABLE: %s' % root.prettify('utf-8', formatter='html'), depth))
+                    new_sub_node = ArticleElem('DIV', unicodedata.normalize("NFKD", rs).encode('ascii', 'ignore'))
+        elif tag_name in ['TABLE', 'BLOCKQUOTE']:
             # convert bs4.element.Tag to string
-            rs = str(root)
-            sub_element = ArticleElem('TABLE', rs)
-        elif root.name in ['blockquote']:
-            if debug:
-                logger.debug(prt_fmt('end extract BLOCKQUOTE: %s' % root.prettify('utf-8', formatter='html'), depth))
-            # convert bs4.element.Tag to string
-            rs = str(root)
-            sub_element = ArticleElem('BLOCKQUOTE', rs)
-        elif root.name in ['h2']:
-            if debug:
-                logger.debug(prt_fmt('end extract HEAD: %s' % repr(rs), depth))
+            rs = str(ori_node)
+            new_sub_node = ArticleElem(tag_name, rs)
+        elif tag_name in ['H2']:
             if rs != '':
-                sub_element = ArticleElem('HEAD', unicodedata.normalize("NFKD", rs).encode('ascii', 'ignore'))
+                new_sub_node = ArticleElem('HEAD', unicodedata.normalize("NFKD", rs).encode('ascii', 'ignore'))
+        elif tag_name in ['P']:
+            if has_sub_tag(ori_node, ['EM']):
+                if rs != '':
+                    new_sub_node = ArticleElem('EM', unicodedata.normalize("NFKD", rs).encode('ascii', 'ignore'))
             else:
-                sub_element = ArticleElem('HEAD', '')
-        elif root.name in ['p']:
-            if debug:
-                logger.debug(prt_fmt('end extract paragraph: %s' % repr(rs), depth))
-            if rs != '':
-                sub_element = ArticleElem('PARA', unicodedata.normalize("NFKD", rs).encode('ascii', 'ignore'))
-        elif root.name in ['img']:
-            img_alt = root['alt']
-            img_src = root['src']
-            sub_element = ArticleElem('IMG', '', img_alt, img_src)
-            if debug:
-                logger.debug(prt_fmt('end extract IMG: %s' % img_alt, depth))
-        else:
-            pass
+                if rs != '':
+                    new_sub_node = ArticleElem('PARA', unicodedata.normalize("NFKD", rs).encode('ascii', 'ignore'))
+        elif tag_name in ['IMG']:
+            new_sub_node = ArticleElem('IMG', '', ori_node)
 
-        if sub_element:
-            article_elem.add(sub_element)
-
-    depth -= 1
-    return rs
-
+        # add child node in new generated tree
+        if new_sub_node:
+            new_node.add(new_sub_node)
+        depth -= 1
+        return rs
 
 def translate_content(orig_content):
     # translate content
@@ -211,20 +197,19 @@ def translate_orig_article_content(orig_content):
             soup_tree = BeautifulSoup(css_div, 'lxml')
 
             # remove embed advertisement filtering by 'div class="interad"'
-            for adv in soup_tree.find_all('div', class_='interad'):
+            for adv in soup_tree.find_all('div', class_='ad-container'):
                 adv.decompose()
 
             # extract content from original source HTML
-            logger.info('begin extracting content ...')
+            logger.info('begin extracting content')
             article_elem = ArticleElem('BODY', '')
-            extract_content(soup_tree, article_elem, debug=False)
-            # logger.debug('\n' + article_elem.to_str())
-            logger.info('end extracting content!')
+            extract_content(soup_tree, article_elem, debug=True)
+            logger.info('end extracting content')
 
             # translate original text into chinese text
-            logger.info('begin translating content ...')
+            logger.info('begin translating content')
             article_elem.translate()
-            logger.info('end translating content!')
+            logger.info('end translating content')
 
             # convert tree to HTML tree
             html_tree = article_elem.to_html(article_elem, None, None)
@@ -333,10 +318,10 @@ def gen_html(file_name, content):
     # load the file
     with open("www/template.html") as inf:
         txt = inf.read()
-        soup = bs4.BeautifulSoup(txt)
+        soup = bs4.BeautifulSoup(txt, 'lxml')
 
     # insert it into the document
-    content_tag = BeautifulSoup(content, 'html.parser')
+    content_tag = BeautifulSoup(content, 'lxml')
     soup.body.append(content_tag)
 
     # save the file again
@@ -355,8 +340,12 @@ def translate_orig_articles(bulk_size=1):
     logger.info('Loads articles from DB then translates articles\n')
     success_count, fail_count = 0, 0
 
-    # for article in SQLiteManager.all_article('ArticleEN'):
-    for url in SQLiteManager.query_un_translated_orig_article():
+    un_trans_urls = SQLiteManager.query_un_translated_orig_article()
+    if len(un_trans_urls) == 0:
+        logger.info('no article to translate!')
+        return
+
+    for url in un_trans_urls:
         article = SQLiteManager.get_article('ArticleOrig', url)
         if article is None:
             logger.error('error get article!! URL: %s\n' % url)
@@ -365,8 +354,8 @@ def translate_orig_articles(bulk_size=1):
         logger.info('begin translate article %s' % url)
 
         # set the translate method for all ArticleElem
-        #translator_vendor = BaiduTranslator()
-        translator_vendor = Translator()
+        translator_vendor = BaiduTranslator()
+        #translator_vendor = Translator()
         if bulk_size >= 0:
             ArticleElem.translator = translator_vendor
 
@@ -380,19 +369,18 @@ def translate_orig_articles(bulk_size=1):
         content_cn = translate_orig_article_content(content_en)
 
         # pickle object with protocol version 2 compatible with python 2.x
-        #article_cn.content = zlib.compress(pickle.dumps(content_cn, protocol=2))
         article.contentCN = zlib.compress(pickle.dumps(content_cn))
         gen_html('en_article.html', content_en)
         gen_html('cn_article.html', content_cn)
 
         logger.debug('ready to store the translated article.')
-        #if SQLiteManager.upd_article(article):
-        #    logger.debug('successfully store article(%s)\n' % article.mainTitle)
-        #    success_count += 1
-        #    bulk_size -= 1
-        #else:
-        #    logger.debug('fails to store translated article(%s) into database\n' % article_cn.mainTitle)
-        #    fail_count += 1
+        if SQLiteManager.upd_article('ArticleOrig', article):
+            logger.debug('successfully store article(%s)\n' % article.mainTitle)
+            success_count += 1
+            bulk_size -= 1
+        else:
+            logger.debug('fails to store translated article(%s) into database\n' % article.mainTitle)
+            fail_count += 1
         logger.debug('\n')
         break
 
@@ -401,6 +389,33 @@ def translate_orig_articles(bulk_size=1):
             break
     logger.info('translating summary:\n\tsuccess = %d\n\tfail = %d' % (success_count, fail_count))
 
+# ----------------------------------------------------------------------------------
+# Description: translate author info into chinese
+#              and convert html format article
+# ----------------------------------------------------------------------------------
+def translate_author(bulk_size=20):
+    logger.debug('Loads articles from DB then translates article tags ...')
+    success_count, fail_count = 0, 0
+
+    authors = AuthorCard.get_un_translated_authors()
+    if len(authors) == 0:
+        logger.info('no author to translate!')
+
+    # set up translator
+    translator_vendor = BaiduTranslator()
+    for author in authors:
+        logger.debug('%s %s' % (author.name, author.contact))
+        author_card =  AuthorCard.get(author.contact)
+        info = pickle.loads(zlib.decompress(author_card.info))
+        info_cn = translator_vendor.translate(info)
+        author_card.set_info_cn(info_cn)
+        success_count += 1
+        bulk_size -= 1
+        # translate a bulk of articles every execution
+        if bulk_size == 0:
+            break
+
+    logger.debug('translating author:\n\tsuccess = %d\n\tfail = %d' % (success_count, fail_count))
 
 # ----------------------------------------------------------------------------------
 # Description: translate chinese article tags

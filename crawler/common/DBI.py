@@ -60,47 +60,6 @@ class ArticleEN(Base):
     def __repr__(self):
         return "<Metadata('%s','%s')>" % (self.url, self.mainTitle)
 
-# store original article data
-class ArticleOrig(Base):
-    __tablename__ = 'ArticleOrig'
-    url = Column(VARCHAR(128), unique=True, primary_key=True)
-    mainTitle = Column(VARCHAR(128), nullable=False)
-    mainTitleCN = Column(VARCHAR(128))
-    articleTag = Column(VARCHAR(128), nullable=False)
-    articleSection = Column(VARCHAR(128))
-    content = Column(BLOB, nullable=False)
-    contentCN = Column(BLOB)
-    authorId = Column(Integer, nullable=False)
-    publishTime = Column(DateTime, nullable=False)
-
-    def __init__(self, item):
-        self.url = item['url']
-        self.mainTitle = item['mainTitle']
-        self.content = zlib.compress(pickle.dumps(item['content']))
-        self.articleTag = item['articleTag']
-        self.articleSection = item['articleSection']
-        self.authorId = item['authorId']
-        self.publishTime = item['publishTime']
-
-    def __repr__(self):
-        return "<Metadata('%s','%s')>" % (self.url, self.mainTitle)
-
-# store original article data
-class Author(Base):
-    __tablename__ = 'Author'
-    id = Column(Integer, unique=True, primary_key=True)
-    name = Column(VARCHAR(128), nullable=False)
-    email = Column(VARCHAR(128))
-    info = Column(BLOB)
-    info_cn = Column(BLOB)
-
-    def __init__(self, item):
-        self.name = item['authorName']
-        self.email = item['authorEmail']
-        self.info = zlib.compress(pickle.dumps(item['authorInfo']))
-
-    def __repr__(self):
-        return "<Metadata('%s','%s')>" % (self.name, self.name)
 
 # declare Database schema and ORM mapping
 class ArticleCN(Base):
@@ -122,12 +81,8 @@ class ArticleCN(Base):
         self.url = ''
         self.mainTitle = ''
         self.subTitle = ''
-        if sys.version_info[0] < 3:
-            self.content = ''
-            self.contentCN = ''
-        else:
-            self.content = bytes('', 'utf8')
-            self.contentCN = ''
+        self.content = ''
+        self.contentCN = ''
         self.articleTag = ''
         self.articleSection = ''
         self.authorName = ''
@@ -139,6 +94,145 @@ class ArticleCN(Base):
     def __repr__(self):
         return "<Metadata('%s','%s')>" % (self.url, self.mainTitle)
 
+
+# store original article data
+class ArticleOrig(Base):
+    __tablename__ = 'ArticleOrig'
+    url         = Column(VARCHAR(128), unique=True, primary_key=True)
+    mainTitle   = Column(VARCHAR(128), nullable=False)
+    mainTitleCN = Column(VARCHAR(128))
+    articleTag  = Column(VARCHAR(128), nullable=False)
+    articleSection = Column(VARCHAR(128))
+    content = Column(BLOB, nullable=False)
+    contentCN = Column(BLOB)
+    authorId = Column(Integer, nullable=False)
+    publishTime = Column(DateTime, nullable=False)
+
+    def __init__(self, item):
+        self.url = item['url']
+        self.mainTitle = item['mainTitle']
+        self.content = zlib.compress(pickle.dumps(item['content']))
+        self.articleTag = item['articleTag']
+        self.articleSection = item['articleSection']
+        self.authorId = item['authorId']
+        self.publishTime = item['publishTime']
+
+    def __repr__(self):
+        return "<Metadata('%s','%s')>" % (self.url, self.mainTitle)
+
+# store original article data
+class AuthorCard(Base):
+    __tablename__ = 'AuthorCard'
+    id      = Column(Integer, unique=True, primary_key=True)
+    name    = Column(VARCHAR(128), nullable=False)
+    contact = Column(VARCHAR(128), nullable=False)
+    link    = Column(VARCHAR(128), nullable=False)
+    info    = Column(BLOB)
+    infoCN  = Column(BLOB)
+
+    # ------------------------------------------------
+    # functions related to Author table
+    # ------------------------------------------------
+    def __init__(self):
+        pass
+
+    def __init__(self, item):
+        self.name    = item['authorName']
+        self.contact = item['authorContact']
+        self.link    = item['authorLink']
+        self.info    = zlib.compress(pickle.dumps(item['authorInfo']))
+
+    def __repr__(self):
+        return "<Metadata('%s','%s')>" % (self.name, self.contact)
+
+    @staticmethod
+    def get(contact):
+        if contact == '':
+            raise KeyError('contact is empty string')
+        session = Session()
+        result = session.query(
+            AuthorCard).filter(AuthorCard.contact == contact).all()
+        session.commit()
+        if len(result)>0:
+            return result[0]
+        else:
+            raise KeyError('%s does not exist' % contact)
+
+    # update author infoCN
+    def set_info_cn(self, info_cn):
+        logging.log(logging.DEBUG, 'set_info_cn(): contact %s' % (self.contact))
+        if self.contact == '':
+            raise KeyError('contact is empty string')
+        try:
+            session = Session()
+            for a in session.query(AuthorCard
+                            ).filter(AuthorCard.contact == self.contact).all():
+                a.infoCN = zlib.compress(pickle.dumps(info_cn))
+            session.commit()
+        except exc.SQLAlchemyError as e:
+            logging.log(logging.DEBUG, e)
+            raise e
+
+    # check if an author exists in DB
+    #   return author id if already exists
+    #   return None if not existed
+    @staticmethod
+    def add_author(item):
+        author_name = item['authorName']
+        author_contact = item['authorContact']
+        logging.log(logging.DEBUG, '%s %s' % (author_name, author_contact))
+        try:
+            session = Session()
+            record = AuthorCard(item)
+            session.add(record)
+            session.commit()
+            return record.id
+        except exc.SQLAlchemyError as e:
+            logging.log(logging.DEBUG, e)
+            return None
+
+    @staticmethod
+    def has_author(item):
+        author_name = item['authorName']
+        author_contact = item['authorContact']
+        logging.log(logging.DEBUG, '%s %s' % (author_name, author_contact))
+        session = Session()
+        result = []
+        if author_contact:
+            result = session.query(AuthorCard).filter(AuthorCard.contact == author_contact).all()
+            session.commit()
+            if len(result) > 0:
+                return result.id
+            else:
+                return None
+        else:
+            return None
+
+    # get all authors that are not translated
+    @staticmethod
+    def get_un_translated_authors():
+        session = Session()
+        result = session.query(
+            AuthorCard.id,
+            AuthorCard.name,
+            AuthorCard.contact,
+            AuthorCard.link
+        ).filter(AuthorCard.infoCN == None).all()
+        session.commit()
+        return result
+
+    # get an article exists in DB via URL
+    @staticmethod
+    def update_author(author):
+        session = Session()
+        if author.contact != '':
+            for a in session.query(AuthorCard).filter(AuthorCard.contact == author.contact).all():
+                a = author
+        elif author.name != '':
+            for a in session.query(AuthorCard).filter(AuthorCard.name == author.name).all():
+                a = author
+        session.commit()
+        return True
 
 # create database and tables
 try:
@@ -185,18 +279,7 @@ class SQLiteManager(object):
             logging.log(logging.DEBUG, e)
             return False
 
-    @staticmethod
-    def add_author(item):
-        logging.log(logging.DEBUG, 'add_author() %s %s' % (item['authorName'], item['authorEmail']))
-        try:
-            session = Session()
-            record = Author(item)
-            session.add(record)
-            session.commit()
-            return record.id
-        except exc.SQLAlchemyError as e:
-            logging.log(logging.DEBUG, e)
-            return None
+
     
     # update article tag field
     @staticmethod
@@ -242,9 +325,25 @@ class SQLiteManager(object):
             for a in session.query(ArticleCN).filter(ArticleCN.url == url).all():
                 a.contentCN = c
             session.commit()
+            return True
         else:
             logging.debug(logging.DEBUG, 'invalid table name: %s' % tbl_name)
             session.commit()
+            return False
+
+    # update article contentCN field
+    @staticmethod
+    def upd_article(tbl_name, article):
+        session = Session()
+        if tbl_name == 'ArticleOrig':
+            for a in session.query(ArticleOrig).filter(ArticleOrig.url == article.url).all():
+                a = article
+            session.commit()
+            return True
+        else:
+            logging.debug(logging.DEBUG, 'invalid table name: %s' % tbl_name)
+            session.commit()
+            return False
 
     # delete article from DB via URL
     @staticmethod
@@ -283,36 +382,6 @@ class SQLiteManager(object):
         logging.log(logging.DEBUG, 'has_article() return %r' % ret)
         return ret
 
-    # check if an article exists in DB via URL
-    #   return author id if already exists
-    #   return None if not existed
-    @staticmethod
-    def has_author(item):
-        author_name = item['authorName']
-        author_email = item['authorEmail']
-        logging.log(logging.DEBUG, '%s %s' % (author_name, author_email))
-        session = Session()
-        result = []
-        if author_email:
-            result = session.query(Author).filter(Author.email == author_email).all()
-            session.commit()
-            if len(result) > 0:
-                return result.id
-            else:
-                return None
-        elif author_name:
-            result = session.query(Author).filter(Author.name == author_name).all()
-            session.commit()
-            if len(result) == 0:
-                return None
-            elif len(result) == 1:
-                return result.id
-            else:
-                # dupliacte author name, just use first one
-                return result.id
-        else:
-            return None
-    
     # get an article exists in DB via URL
     @staticmethod
     def get_article(tbl_name, url):
@@ -390,7 +459,7 @@ class SQLiteManager(object):
     # retrieve all articles that are not translated
     @staticmethod
     def query_un_translated_orig_article():
-        sql = text('select url from ArticleOrig where contentCN is NULL')
+        sql = text('select url from ArticleOrig where contentCN is null')
         result = engine.execute(sql)
         urls = []
         for row in result:

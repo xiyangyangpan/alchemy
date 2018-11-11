@@ -32,6 +32,7 @@ login_URL = 'rest/user/login'
 session_token_URL = 'services/session/token'
 term_URL = 'rest/taxonomy_term'
 node_URL = 'rest/node'
+user_URL = 'rest/user'
 CSRF = None
 # --------------------------------------------------------------------
 
@@ -45,7 +46,10 @@ def rest_login():
         'Content-Type': 'application/json',
         "Connection": "keep-alive"
     }
-    rest_response_login = requests.post(urljoin(site_base_URL, login_URL), headers=login_headers, json=auth_info)
+    rest_response_login = requests.post(
+        urljoin(site_base_URL, login_URL),
+        headers=login_headers,
+        json=auth_info)
     # logger.debug('response_login.text = %s' % rest_response_login.text)
     if rest_response_login.status_code != requests.codes.ok:
         logger.error( rest_response_login)
@@ -67,7 +71,10 @@ def rest_login():
 #     rest_session_headers: headers for connected session (json format)
 # --------------------------------------------------------------------
 def rest_list_nodes(rest_session_headers):
-    response_list = requests.get(urljoin(site_base_URL, node_URL), headers=rest_session_headers, json={})
+    response_list = requests.get(
+        urljoin(site_base_URL, node_URL),
+        headers=rest_session_headers,
+        json={})
     print ('response_list = ', response_list.text)
     print ('-----------------------------------------\n')
 
@@ -79,7 +86,10 @@ def rest_list_nodes(rest_session_headers):
 # --------------------------------------------------------------------
 # httplib.HTTPConnection.debuglevel = 5
 def rest_del_nodes(rest_session_headers):
-    response = requests.get(urljoin(site_base_URL, node_URL), headers=rest_session_headers, json={})
+    response = requests.get(
+        urljoin(site_base_URL, node_URL),
+        headers=rest_session_headers,
+        json={})
     node_list = json.loads(response.text)
     for node in node_list:
         if node['type'] == 'paid_article':
@@ -93,7 +103,10 @@ def rest_del_nodes(rest_session_headers):
 
 def rest_del_all_nodes(rest_session_headers):
     while True:
-        response = requests.get(urljoin(site_base_URL, node_URL), headers=rest_session_headers, json={})
+        response = requests.get(
+            urljoin(site_base_URL, node_URL),
+            headers=rest_session_headers,
+            json={})
         node_list = json.loads(response.text)
         logger.debug('fetch node list. status = %s' % response.status_code)
         if response.status_code != 200:
@@ -124,7 +137,10 @@ def rest_del_all_nodes(rest_session_headers):
 def rest_list_taxonomy_term(rest_session_headers):
     logger.debug('list taxonomy term')
 
-    response = requests.get(urljoin(site_base_URL, term_URL), headers=rest_session_headers, json={})
+    response = requests.get(
+        urljoin(site_base_URL, term_URL),
+        headers=rest_session_headers,
+        json={})
     logger.debug( 'response_list = ', response.text)
     parsed = json.loads(response.text)
     # print json.dumps(parsed, indent=4, sort_keys=True)
@@ -211,7 +227,10 @@ def pub_cn_article(article_type, url, rest_session_headers):
     }
 
     logger.info('post an article to site')
-    res = requests.post(urljoin(site_base_URL, node_URL), headers=rest_session_headers, json=article)
+    res = requests.post(
+        urljoin(site_base_URL, node_URL),
+        headers=rest_session_headers,
+        json=article)
     logger.debug('response text: %s\n' % res.text)
     if res.status_code == 200:
         logger.info('post article successfully! status code: 200\n')

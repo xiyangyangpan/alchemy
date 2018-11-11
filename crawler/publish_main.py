@@ -3,19 +3,20 @@
 import sys
 from optparse import OptionParser
 from cms.PubArticleToSite import *
+from cms.RestUser import create_user
 from cms_log import logger
 
 
 if __name__ == "__main__":
-    usage = "usage: %prog [options] {all|bulk}"
+    usage = "usage: %prog [options] {all|bulk|user}"
     parser = OptionParser(usage)
 
     parser.add_option("-m", "--mode",
                       default="pub",
-                      help="mode: pub, revoke",
+                      help="mode: pub, revoke, create",
                       dest="mode")
     (options, args) = parser.parse_args()
-    if len(args) != 1 and args[0] not in ['all', 'bulk']:
+    if len(args) != 1 and args[0] not in ['all', 'bulk', 'user']:
         parser.print_help()
         sys.exit(0)
     domain = args[0]
@@ -28,6 +29,10 @@ if __name__ == "__main__":
         logger.info("revoke published articles from web site. domain:%s" % domain)
         rest_session_headers = rest_login()
         rest_del_all_nodes(rest_session_headers)
+    elif options.mode == "create":
+        logger.info("create user on web site")
+        rest_session_headers = rest_login()
+        create_user(rest_session_headers)
     else:
         parser.print_help()
         sys.exit(0)
